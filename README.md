@@ -4,4 +4,4 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/ljdkgof42i3fgwf6?svg=true)](https://ci.appveyor.com/project/eschnett/SmallInts-jl)
 [![codecov.io](https://codecov.io/github/eschnett/SmallInts.jl/coverage.svg?branch=master)](https://codecov.io/github/eschnett/SmallInts.jl?branch=master)
 
-Small integer types
+Small integer types (fewer than 8 bits), mostly useful for debugging and testing.

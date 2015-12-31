@@ -1,6 +1,100 @@
 using SmallInts
 using Base.Test
 
+for (n,I) in enumerate((Int1, Int2, Int4))
+    nbits = 1 << (n-1)
+    minval = (Int8(-1) << (nbits-1))
+    maxval = (Int8(1) << (nbits-1)) - Int8(1)
+    for x in minval:maxval
+        @test Int8(I(x)) === x
+        @test I(x).val === x
+        @test rem(x, I) === I(x)
+        @test convert(I, x) === I(x)
+        @test typemin(I).val == ~typemax(I).val
+
+        @test rem(I(x), I) === I(x)
+        @test rem(I(x), Bool) === rem(x, Bool)
+        @test rem(rem(x, Bool), I) === I(rem(x, Bool) ? 1 : 0)
+        @test convert(I, I(x)) === I(x)
+        @test convert(I, rem(x, Bool)) === rem(rem(x, Bool), I)
+        if x == rem(x, Bool)
+            @test convert(Bool, I(x)) === rem(I(x), Bool)
+        else
+            @test_throws InexactError convert(Bool, I(x))
+        end
+
+        if x < 0
+            @test leading_zeros(I(x)) == 0
+            @test leading_ones(I(x)) == leading_zeros(~I(x))
+        else
+            @test leading_zeros(I(x)) ==
+                leading_zeros(x) - leading_zeros(maxval) + 1
+            @test leading_ones(I(x)) == 0
+        end
+        @test trailing_zeros(I(x)) ==
+            min(trailing_zeros(x), trailing_ones(maxval) + 1)
+        if x == 0
+            @test trailing_ones(I(x)) == 0
+        elseif x == -1
+            @test trailing_ones(I(x)) == nbits
+        else
+            @test trailing_ones(I(x)) == trailing_ones(x)
+        end
+
+        @test ~I(x) === rem(~x, I)
+        @test +I(x) === rem(+x, I)
+        @test -I(x) === rem(-x, I)
+        @test abs(I(x)) === rem(abs(x), I)
+
+        for y in minval:maxval
+            @test I(x) & I(y) === I(x & y)
+            @test I(x) | I(y) === I(x | y)
+            @test I(x) $ I(y) === I(x $ y)
+
+            if y < 0
+                @test I(x) << Int(y) === I(0)
+                @test I(x) >> Int(y) === I(x < 0 ? -1 : 0)
+                @test I(x) >>> Int(y) === I(0)
+            else
+                @test I(x) << Int(y) === rem(x << y, I)
+                @test I(x) >> Int(y) === I(x >> y)
+                @test I(x) >>> Int(y) ===
+                    rem((x >>> y) & (Int8(-1) >>> (8 - nbits + y)), I)
+            end
+
+            @test (I(x) == I(y)) === (x == y)
+            @test (I(x) != I(y)) === (x != y)
+            @test (I(x) <= I(y)) === (x <= y)
+            @test (I(x) < I(y)) === (x < y)
+            @test (I(x) >= I(y)) === (x >= y)
+            @test (I(x) > I(y)) === (x > y)
+
+            @test I(x) + I(y) === rem(x + y, I)
+            @test I(x) - I(y) === rem(x - y, I)
+            @test I(x) * I(y) === rem(x * y, I)
+            if y == 0 || (x == minval && y == -1)
+                @test_throws DivideError div(I(x), I(y))
+                @test_throws DivideError fld(I(x), I(y))
+                @test_throws DivideError cld(I(x), I(y))
+            else
+                @test div(I(x), I(y)) === I(div(x, y))
+                @test fld(I(x), I(y)) === I(fld(x, y))
+                @test cld(I(x), I(y)) === I(cld(x, y))
+            end
+            if y == 0
+                @test_throws DivideError rem(I(x), I(y))
+                @test_throws DivideError mod(I(x), I(y))
+            else
+                @test rem(I(x), I(y)) === I(rem(x, y))
+                @test mod(I(x), I(y)) === I(mod(x, y))
+            end
+        end
+    end
+
+    @test_throws InexactError convert(I, -9)
+    @test_throws InexactError convert(I, 8)
+end
+
 for (n,U) in enumerate((UInt1, UInt2, UInt4))
     nbits = 1 << (n-1)
     maxval = (0x01 << nbits) - 0x01
@@ -38,9 +132,9 @@ for (n,U) in enumerate((UInt1, UInt2, UInt4))
             @test U(x) | U(y) === U(x | y)
             @test U(x) $ U(y) === U(x $ y)
 
-            @test U(x) << U(y) === rem(x << y, U)
-            @test U(x) >> U(y) === U(x >> y)
-            @test U(x) >>> U(y) === U(x >>> y)
+            @test U(x) << Int(y) === rem(x << y, U)
+            @test U(x) >> Int(y) === U(x >> y)
+            @test U(x) >>> Int(y) === U(x >>> y)
 
             @test (U(x) == U(y)) === (x == y)
             @test (U(x) != U(y)) === (x != y)
